@@ -1,0 +1,23 @@
+<html>
+    <head>
+    </head>
+    <body>
+        This Same Origin Policy Demo
+
+        <!--
+Access to fetch at 'https://exmaple.com/' from origin 'http://localhost:3000'
+has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is
+present on the requested resource. If an opaque response serves your needs,
+set the request's mode to 'no-cors' to fetch the resource with CORS disabled.
+         -->
+        <script>
+            fetch("https://exmaple.com/blocked.by.cors").then(function(response) {
+                return response.text();
+            }).then(function(text) {
+                console.log(text);
+            }).catch(function(error) {
+                console.log("error", error);
+            });
+        </script>
+    </body>
+</html>
