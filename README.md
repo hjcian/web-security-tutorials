@@ -9,9 +9,13 @@
   - 📛 `https://store.company.com/page.html`
   - 📛 `http://store.company.com:81/dir/page.html`
   - 📛 `http://news.company.com/dir/page.html`
-- 預設允許
-  - 跨來源嵌入行為 (embed)
-  -
+- 預設規則
+  - 透過 HTML tag (embedding) 內引起的請求，通常都會被允許
+  - 透過 JS code 去發起的請求，都會被限制
+  - see example [same-origin-policy/index.html](./same-origin-policy/index.html)
+- 許多資安的破口就是在那些 embedding 的請求，瀏覽器沒幫你擋下來所造成
+  - 利用此種機制所做的攻擊，被稱為 **「跨站請求偽造 (Cross-Site Request Forgery, CSRF)」**
+  - 故 **CSRF token** 的設計就是會了進一步阻擋這類攻擊
 
 
 References:

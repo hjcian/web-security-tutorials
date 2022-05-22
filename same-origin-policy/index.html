@@ -1,17 +1,35 @@
 <html>
     <head>
+        <!-- ✅ cross-origin embedding is OK -->
+        <link rel="stylesheet" href="https://example.com/<link>.embed.GET.is.OK">
     </head>
     <body>
-        This Same Origin Policy Demo
+        This Same Origin Policy Demo        <br/><br/>
 
-        <!--
-Access to fetch at 'https://exmaple.com/' from origin 'http://localhost:3000'
-has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is
-present on the requested resource. If an opaque response serves your needs,
-set the request's mode to 'no-cors' to fetch the resource with CORS disabled.
-         -->
+        F12 打開 Console 觀察哪些存取方式會被 CORS 擋下來        <br/><br/>
+
+        Ref:
+        <a href="https://developer.mozilla.org/zh-TW/docs/Web/Security/Same-origin_policy#%E8%B7%A8%E4%BE%86%E6%BA%90%E7%B6%B2%E8%B7%AF%E5%AD%98%E5%8F%96">
+            同源政策 (Same-origin policy) #跨來源網路存取
+        </a>
+
+        <br/><br/><br/>
+
+        <!-- ✅ cross-origin embedding is OK -->
+        <script src="https://example.com/<script>.embed.GET.is.OK" style="display: none;"></script>
+        <iframe src="https://example.com/<iframe>.embed.GET.is.OK" style="display: none;"></iframe>
+        <img src="https://example.com/<img>.embed.GET.is.OK" style="display: none;"></img>
+
+        <!-- ✅ cross-origin writes are OK -->
+        <iframe name="hiddenFrame" style="display: none;"></iframe>
+        <form action="https://example.com/<form>.POST.is.OK" method="POST" class="form-example" target="hiddenFrame">
+            <input type="submit" value="Test form">
+        </form>
+
+
+        <!-- 📛 cross-origin reads are NG -->
         <script>
-            fetch("https://exmaple.com/blocked.by.cors").then(function(response) {
+            fetch("https://example.com/<script>.js.GET.will.be.blocked.by.cors").then(function(response) {
                 return response.text();
             }).then(function(text) {
                 console.log(text);
