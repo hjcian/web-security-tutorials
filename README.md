@@ -6,6 +6,7 @@
     - [The `Set-Cookie` and `Cookie` headers](#the-set-cookie-and-cookie-headers)
   - [Cookie Policy](#cookie-policy)
     - [Common attributes you should apply on cookie](#common-attributes-you-should-apply-on-cookie)
+- [補充資料待整理](#補充資料待整理)
 
 
 ## Same Origin Policy
@@ -109,3 +110,10 @@ References:
   - Edge: https://docs.microsoft.com/en-us/microsoft-edge/devtools-guide-chromium/storage/cookies
   - Chrome: https://developer.chrome.com/docs/devtools/storage/cookies/
 - [Restrict access to cookies: about `Secure` and `HttpOnly`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#restrict_access_to_cookies)
+
+
+# 補充資料待整理
+- [[熱門面試題] 從輸入網址列到渲染畫面，過程經歷了什麼事？](https://medium.com/starbugs/%E7%86%B1%E9%96%80%E9%9D%A2%E8%A9%A6%E9%A1%8C-%E5%BE%9E%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E5%88%97%E5%88%B0%E6%B8%B2%E6%9F%93%E7%95%AB%E9%9D%A2-%E9%81%8E%E7%A8%8B%E7%B6%93%E6%AD%B7%E4%BA%86%E4%BB%80%E9%BA%BC%E4%BA%8B-4a6cafefe78a)
+  - 需要瀏覽器的部分
+- [簡單弄懂同源政策 (Same Origin Policy) 與跨網域 (CORS)](https://medium.com/starbugs/%E5%BC%84%E6%87%82%E5%90%8C%E6%BA%90%E6%94%BF%E7%AD%96-same-origin-policy-%E8%88%87%E8%B7%A8%E7%B6%B2%E5%9F%9F-cors-e2e5c1a53a19)
+  - CORS 的部分待擷取
