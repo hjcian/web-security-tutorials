@@ -118,3 +118,7 @@ References:
   - 需要瀏覽器的部分
 - [簡單弄懂同源政策 (Same Origin Policy) 與跨網域 (CORS)](https://medium.com/starbugs/%E5%BC%84%E6%87%82%E5%90%8C%E6%BA%90%E6%94%BF%E7%AD%96-same-origin-policy-%E8%88%87%E8%B7%A8%E7%B6%B2%E5%9F%9F-cors-e2e5c1a53a19)
   - CORS 的部分待擷取
+- self sign certificate
+  - https://devcenter.heroku.com/articles/ssl-certificate-self
+  - https://serverfault.com/questions/310046/how-to-self-sign-an-ssl-certificate-for-a-specific-domain
+    - openssl req -> Common Name
