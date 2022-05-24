@@ -78,16 +78,17 @@ References:
 
 ### Common attributes you should apply on cookie
 
-✅ attributes
+✅ Good Attributes
 - `Secure`
-  - server 可指定 cookie pair 擁有 `Secure` 屬性，寫回瀏覽器。此屬性也被限制只能透過 HTTPS 站點來設置 (NOTE: 實驗一下)
-  - 瀏覽器儲存的 cookie 若有 `Secure` 屬性，就不會在連向 un-encrypted server 時 (i.e. via HTTP)，帶上該 cookie
+  - server 可指定 cookie pair 擁有 `Secure` 屬性。擁有此屬性的 cookie 會被限制只能透過安全連線來設置 (實務上，HTTPS 是一種安全連線)
+  - 又瀏覽器儲存的 cookie 若有 `Secure` 屬性，就不會在連向 un-encrypted server 時 (i.e. via HTTP)，帶上該 cookie
   - e.g. `Set-Cookie: key=value; Secure`
+  - ⚠️ except on localhost
 - `HttpOnly`
   - protect from XSS (to prevent cookie from being read from JavaSCript (`document.cookie`))
   - e.g. `Set-Cookie: key=value; Secure; HttpOnly`
 
-📛 attributes
+📛 Bad Attributes
 - `Path`
   - https://web.stanford.edu/class/cs253/ , [Session attacks, Cross-Site Request Forgery (P.22)](https://web.stanford.edu/class/cs253/lectures/Lecture%2005.pdf)
 - `Domain`

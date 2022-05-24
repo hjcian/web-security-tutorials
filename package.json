@@ -1,0 +1,16 @@
+{
+  "name": "web-security-tutorials",
+  "version": "1.0.0",
+  "main": "main.js",
+  "repository": "git@github.com:hjcian/web-security-tutorials.git",
+  "author": "Max Cian <maxcian@jubo.health>",
+  "license": "MIT",
+  "scripts": {
+    "run-cookie-secure-httponly-example": "nodemon cookie.Secure.HttpOnly/main.js"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.6",
+    "express": "^4.18.1",
+    "nodemon": "^2.0.16"
+  }
+}
