@@ -29,6 +29,10 @@ References:
 - [同源政策 (Same-origin policy)](https://developer.mozilla.org/zh-TW/docs/Web/Security/Same-origin_policy)
 - [Why is the same origin policy so important?](https://security.stackexchange.com/questions/8264/why-is-the-same-origin-policy-so-important)
 
+## Cross-Origin Resource Sharing (CORS)
+- TODO
+
+
 ## Cookie Brief Explained
 - 由於 HTTP 的設計為 stateless，故如何管理並追蹤使用者的「session」，以得知前後不同的 requests 是由同一個使用者所進行的同一組 session，是一個需要想清楚的事
 - 最早訂定的標準為 1997 年的「RFC 2109 - HTTP State Management Mechanism」，提出使用 `Set-Cookie` 與 `Cookie` 兩個 headers 來創建 stateful session 的方法
@@ -122,3 +126,9 @@ References:
   - https://devcenter.heroku.com/articles/ssl-certificate-self
   - https://serverfault.com/questions/310046/how-to-self-sign-an-ssl-certificate-for-a-specific-domain
     - openssl req -> Common Name
+- TODO
+  - CSRF
+  - XSS
+  - CSP
+  - Cross-Origin Read Blocking (CORB)
+
