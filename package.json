@@ -6,7 +6,8 @@
   "author": "Max Cian <maxcian@jubo.health>",
   "license": "MIT",
   "scripts": {
-    "run-cookie-secure-httponly-example": "nodemon cookie.Secure.HttpOnly/main.js"
+    "run-cookie-secure-httponly-example": "nodemon cookie.Secure.HttpOnly/main.js",
+    "run-server-for-demo-simple-request": "nodemon cors/simple-request.js"
   },
   "dependencies": {
     "cookie-parser": "^1.4.6",
