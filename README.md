@@ -1,27 +1,37 @@
-# web security tutorials
-
-- [web security tutorials](#web-security-tutorials)
+**Table of Contents**
+- [Web Security 101](#web-security-101)
   - [Same Origin Policy](#same-origin-policy)
-  - [Cookie Brief Explained](#cookie-brief-explained)
+  - [Cross-Origin Resource Sharing (CORS)](#cross-origin-resource-sharing-cors)
+  - [Cookie](#cookie)
+    - [Brief Explained](#brief-explained)
     - [The `Set-Cookie` and `Cookie` headers](#the-set-cookie-and-cookie-headers)
-  - [Cookie Policy](#cookie-policy)
-    - [Common attributes you should apply on cookie](#common-attributes-you-should-apply-on-cookie)
+    - [The Cookie Policy](#the-cookie-policy)
+    - [Harden your Cookie](#harden-your-cookie)
+  - [Cross-Site Request Forgery (CSRF)](#cross-site-request-forgery-csrf)
+  - [Cross-Site Scripting (XSS)](#cross-site-scripting-xss)
+    - [Reflected XSS](#reflected-xss)
+    - [Stored XSS](#stored-xss)
+    - [DOM-based XSS](#dom-based-xss)
+  - [Content Security Policy (CSP)](#content-security-policy-csp)
+  - [Cross-Origin Read Blocking (CORB)](#cross-origin-read-blocking-corb)
+  - [Practical Experience: Veracode & on-premise NIS deployment](#practical-experience-veracode--on-premise-nis-deployment)
 - [補充資料待整理](#補充資料待整理)
 
+# Web Security 101
 
 ## Same Origin Policy
 - 所謂的「同源 (Origin)」是指兩個網站的「通訊協定 (protocol)」、「主機名稱 (host)」與「埠號 (port)」皆相同
 - 網頁安全模型在原則上，不允許不同源的網站之間通訊，以保障最基本的網路安全
 - 給定 `http://store.company.com/dir/page.html` ，以下各 URLs 與之同源與否：
-  - ✅ `http://store.company.com/dir2/other.html`
-  - ✅ `http://store.company.com/dir/inner/another.html`
-  - 📛 `https://store.company.com/page.html`
-  - 📛 `http://store.company.com:81/dir/page.html`
-  - 📛 `http://news.company.com/dir/page.html`
+  1. ✅ `http://store.company.com/dir2/other.html`
+  2. ✅ `http://store.company.com/dir/inner/another.html`
+  3. 📛 `https://store.company.com/page.html`
+  4. 📛 `http://store.company.com:81/dir/page.html`
+  5. 📛 `http://news.company.com/dir/page.html`
 - 預設規則
-  - 透過 HTML tag (embedding) 內引起的請求，通常都會被允許
+  - 透過 HTML tag (embedding) 內發起的 GET 請求，通常都會被允許
   - 透過 JS code 去發起的請求，都會被限制
-  - see example [same-origin-policy/index.html](./same-origin-policy/index.html)
+  - see [PoC](./same-origin-policy/index.html)
 
 
 References:
@@ -33,7 +43,8 @@ References:
 - TODO
 
 
-## Cookie Brief Explained
+## Cookie
+### Brief Explained
 - 由於 HTTP 的設計為 stateless，故如何管理並追蹤使用者的「session」，以得知前後不同的 requests 是由同一個使用者所進行的同一組 session，是一個需要想清楚的事
 - 最早訂定的標準為 1997 年的「RFC 2109 - HTTP State Management Mechanism」，提出使用 `Set-Cookie` 與 `Cookie` 兩個 headers 來創建 stateful session 的方法
 - 事後經過兩次的修訂 (2000 年的 RFC 2965 與 2010 年的 RFC 6265)，使得相關實作規範更加明確
@@ -67,7 +78,7 @@ References:
 - [淺談 Session 與 Cookie：一起來讀 RFC](https://blog.techbridge.cc/2019/08/10/session-and-cookie-rfc/)
 - [Using HTTP cookies - MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies)
 
-## Cookie Policy
+### The Cookie Policy
 - Browser 提供了儲存機制 (Web Storage or IndexedDB) 來儲存 cookie，且預設幫我們根據 **「Origin」** 來做隔離
 - 而瀏覽器預設實作的機制
   - 頁面可以替它的 domain 或是其 parent domain 設置 cookie
@@ -80,7 +91,7 @@ References:
     - 故 HTTP 站點有了可以攻擊 HTTPS 站點的破口
 - 故我們需要一些方法，替 cookie key-value pairs 額外做 **scope** 的設置，來加強資訊安全
 
-### Common attributes you should apply on cookie
+### Harden your Cookie
 
 ✅ Good Attributes
 - `Secure`
@@ -116,6 +127,22 @@ References:
   - Chrome: https://developer.chrome.com/docs/devtools/storage/cookies/
 - [Restrict access to cookies: about `Secure` and `HttpOnly`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#restrict_access_to_cookies)
 
+## Cross-Site Request Forgery (CSRF)
+
+## Cross-Site Scripting (XSS)
+
+### Reflected XSS
+### Stored XSS
+### DOM-based XSS
+
+## Content Security Policy (CSP)
+- https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
+- help to guard XSS
+
+## Cross-Origin Read Blocking (CORB)
+- https://juejin.cn/post/6844903831373889550
+
+## Practical Experience: Veracode & on-premise NIS deployment
 
 # 補充資料待整理
 - [[熱門面試題] 從輸入網址列到渲染畫面，過程經歷了什麼事？](https://medium.com/starbugs/%E7%86%B1%E9%96%80%E9%9D%A2%E8%A9%A6%E9%A1%8C-%E5%BE%9E%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E5%88%97%E5%88%B0%E6%B8%B2%E6%9F%93%E7%95%AB%E9%9D%A2-%E9%81%8E%E7%A8%8B%E7%B6%93%E6%AD%B7%E4%BA%86%E4%BB%80%E9%BA%BC%E4%BA%8B-4a6cafefe78a)
@@ -126,9 +153,4 @@ References:
   - https://devcenter.heroku.com/articles/ssl-certificate-self
   - https://serverfault.com/questions/310046/how-to-self-sign-an-ssl-certificate-for-a-specific-domain
     - openssl req -> Common Name
-- TODO
-  - CSRF
-  - XSS
-  - CSP
-  - Cross-Origin Read Blocking (CORB)
 
