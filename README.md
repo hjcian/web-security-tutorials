@@ -110,6 +110,8 @@ References
   Host: www.example.org
   Cookie: yummy_cookie=choco; tasty_cookie=strawberry
   ```
+### 補充
+- https://medium.com/4ing-%E7%9A%84%E8%88%AA%E6%B5%B7%E6%97%A5%E8%AA%8C/fetch-api-%E6%B2%92%E6%9C%89%E5%82%B3%E9%80%81-cookies-fa0befaae40f
 
 References:
 - [淺談 Session 與 Cookie：一起來讀 RFC](https://blog.techbridge.cc/2019/08/10/session-and-cookie-rfc/)
