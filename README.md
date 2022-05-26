@@ -4,10 +4,12 @@
   - [Cross-Origin Resource Sharing (CORS)](#cross-origin-resource-sharing-cors)
     - [Simple requests](#simple-requests)
     - [Preflighted requests](#preflighted-requests)
-    - [Practical experience: Google Cloud Storage (GCS)](#practical-experience-google-cloud-storage-gcs)
+    - [Discussion: Google Cloud Storage (GCS) needs CORS setting](#discussion-google-cloud-storage-gcs-needs-cors-setting)
+    - [Discussion: Can we allow multiple origins?](#discussion-can-we-allow-multiple-origins)
   - [Cookie](#cookie)
     - [Brief Explained](#brief-explained)
     - [The `Set-Cookie` and `Cookie` headers](#the-set-cookie-and-cookie-headers)
+    - [補充](#補充)
     - [The Cookie Policy](#the-cookie-policy)
     - [Harden your Cookie](#harden-your-cookie)
   - [Cross-Site Request Forgery (CSRF)](#cross-site-request-forgery-csrf)
@@ -23,7 +25,12 @@
 # Web Security 101
 
 ## Same Origin Policy
-- 所謂的「同源 (Origin)」是指兩個網站的「通訊協定 (protocol)」、「主機名稱 (host)」與「埠號 (port)」皆相同
+> See also
+> - [簡單弄懂同源政策 (Same Origin Policy) 與跨網域 (CORS) - StarBugs](https://medium.com/starbugs/%E5%BC%84%E6%87%82%E5%90%8C%E6%BA%90%E6%94%BF%E7%AD%96-same-origin-policy-%E8%88%87%E8%B7%A8%E7%B6%B2%E5%9F%9F-cors-e2e5c1a53a19)
+> - [同源政策 (Same-origin policy) - MDN](https://developer.mozilla.org/zh-TW/docs/Web/Security/Same-origin_policy)
+> - [Why is the same origin policy so important? - stackexchange](https://security.stackexchange.com/questions/8264/why-is-the-same-origin-policy-so-important)
+
+- 所謂的「同源 (Same Origin)」是指兩個網站的「通訊協定 (protocol)」、「主機名稱 (host)」與「埠號 (port)」皆相同
 - 網頁安全模型在原則上，不允許不同源的網站之間通訊，以保障最基本的網路安全
 - 給定 `http://store.company.com/dir/page.html` ，以下各 URLs 與之同源與否：
   1. ✅ `http://store.company.com/dir2/other.html`
@@ -32,38 +39,44 @@
   4. 📛 `http://store.company.com:81/dir/page.html`
   5. 📛 `http://news.company.com/dir/page.html`
 - 預設規則
-  - 透過 HTML tag (embedding) 內發起的 GET 請求，通常都會被允許
-  - 透過 Javascript 程式碼去發起的請求，都會被限制
-  - see [PoC](./same-origin-policy/index.html)
-
-
-References:
-- [簡單弄懂同源政策 (Same Origin Policy) 與跨網域 (CORS)](https://medium.com/starbugs/%E5%BC%84%E6%87%82%E5%90%8C%E6%BA%90%E6%94%BF%E7%AD%96-same-origin-policy-%E8%88%87%E8%B7%A8%E7%B6%B2%E5%9F%9F-cors-e2e5c1a53a19)
-- [同源政策 (Same-origin policy)](https://developer.mozilla.org/zh-TW/docs/Web/Security/Same-origin_policy)
-- [Why is the same origin policy so important?](https://security.stackexchange.com/questions/8264/why-is-the-same-origin-policy-so-important)
+  - 但透過 HTML tag (embedding) 內發起的 GET 請求，就算非同源，通常都會被允許
+  - 而透過 Javascript 程式碼去發起的請求，都會被限制
+- demo
+  - `make run-same-origin-policy-demo`
+  - or just see [index.html](./same-origin-policy/index.html)
 
 ## Cross-Origin Resource Sharing (CORS)
+> See also
+> - [跨來源資源共用 (CORS) - MDN](https://developer.mozilla.org/zh-TW/docs/Web/HTTP/CORS)
+> - [CORS Tutorial: A Guide to Cross-Origin Resource Sharing - auth0.com](https://auth0.com/blog/cors-tutorial-a-guide-to-cross-origin-resource-sharing/)
+
 - 前述我們準備的一個例子示範如何用 Javascript 執行「跨來源 HTTP 請求」。而使用 JS 執行的跨來源 HTTP 請求會被瀏覽器預設的 CORS policy 擋下來，而出現如下圖的紅字提示
-  ![picture 1](https://i.imgur.com/p63naoW.png)
-- 而若想要你的 website 能夠跨來源取得其他來源的伺服器資源，會需要該伺服器回傳特定的 HTTP headers
+  ![picture 1](https://i.imgur.com/rxXECZ4.png)
+- 而若想要你的 website 能夠跨來源取得其他來源的伺服器資源，會需要該伺服器回傳指定的 HTTP headers
+  - e.g. `Access-Control-Allow-Origin`
   - 簡單來說就是要該伺服器實作 website 白名單 (及該 website 的允許行為)
-- 瀏覽器則負責檢查伺服器回傳的 HTTP headers 是否符合 CORS 標準
-- 除此之外，瀏覽器還會將 website 發起的請求區分為 **「 Simple requests 」** 與 **「 Preflighted requests 」**
+- 瀏覽器則會負責檢查伺服器回傳的 HTTP headers 是否符合 CORS 標準
+- 更進一步地說，瀏覽器在**執行跨來源 HTTP 請求**時，會先將 website 發起的請求區分為 **「 Simple requests 」** 與 **「 Preflighted requests 」**，兩者執行細節有所差異
 
 ### Simple requests
-- 簡單來說，你發起的請求只是 `GET` 與 `POST`、且僅包含少數特定的 headers 時，瀏覽器會幫你執行 **simple requests**
-- 此時，瀏覽器真的會發起請求，並在拿到 response 後做較簡單的檢查。若不合法，則顯示 `blocked by CORS policy`
-- 舉例
-  - 今天我要發起的請求分別為 `GET` 與 `POST`
-  - 且沒有帶入額外的 headers (i.e. 只會塞入瀏覽器預設的。瀏覽器預設填入的即落在少數特定的 headers 範圍內)
-  - demo:
-    - `make run-server-for-demo-simple-request`
-    - go to https://example.com/ and open **DevTool**
+> See also
+> - [CORS: Simple requests - MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#simple_requests)
 
-References:
-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#simple_requests
+- 簡單來說，你發起的請求只是 `GET` 與 `POST`、且僅包含少數特定的 headers 時，瀏覽器會幫你執行 **simple requests**
+- 此時，瀏覽器真的會發送請求給伺服器，並在拿到 response 後做較簡單的檢查。若不合法，則顯示 `blocked by CORS policy`
+- 瀏覽器會去檢查一件事：伺服器是否允許此網頁存取它
+  - 檢查方式為
+- demo:
+  - 假設
+    - 發起的請求分別為 `GET` 與 `POST`
+    - 且沒有帶入額外的 headers (i.e. 只會塞入瀏覽器預設的)
+  - `make run-server-for-demo-simple-request` and start live coding
+  - go to https://example.com/ and open **DevTool**
 
 ### Preflighted requests
+> See also
+> - [CORS: Preflighted requests - MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#preflighted_requests)
+
 - 其他會對 server data 產生 side-effects 的請求，CORS 規範要求瀏覽器必須先 **preflight a request**、詢問伺服器：「請問我可以使用什麼方法請求呢 🙂 ？」
 - 舉例
   - 今天我要發起的請求為 `POST`
@@ -71,14 +84,22 @@ References:
   - demo:
     - TODO
 
-### Practical experience: Google Cloud Storage (GCS)
+### Discussion: Google Cloud Storage (GCS) needs CORS setting
+> See also
+> - [Configure cross-origin resource sharing (CORS) on a bucket](https://cloud.google.com/storage/docs/configuring-cors)
 - 我們會把檔案、圖片放到 GCS 內指定的 **bucket**，且可以取得一個 public URL 來指向該檔案
   - e.g. OOOXXX
 - 如果該檔案是一個圖片檔，實務應用會將它直接塞進 `<img src="image link">` tag 裡，讓瀏覽器直接發出請求、拿到圖片、直接呈現
-- 但 GCS 預設也不是任何人拿到 URL 都可以存取資源，它會要求你替該 bucket 設定好 CORS，正向表列出有哪些 websites 才可以存取你的資源
+- 但 GCS 預設也不是任何人拿到 URL 都可以存取資源，它會要求你替該 bucket 設定好 CORS，正向表列出有哪些 websites 可以存取你的資源
 
-References
-- [跨來源資源共用 (CORS)](https://developer.mozilla.org/zh-TW/docs/Web/HTTP/CORS)
+### Discussion: Can we allow multiple origins?
+> See also
+> - [Reason: Multiple CORS header 'Access-Control-Allow-Origin' not allowed - MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSMultipleAllowOriginNotAllowed)
+
+- `Access-Control-Allow-Origin` 並不支援回傳多個 origins 的語法 (無論你空白分隔還是逗點分隔，瀏覽器都不理你)
+- 也無法透過設置多個 `Access-Control-Allow-Origin` 在 response header 中來達成
+- 建議的做法是伺服器去 **echo** request 中的 `origin` header (當然要檢查在你的白名單內才 echo)
+
 
 ## Cookie
 ### Brief Explained
