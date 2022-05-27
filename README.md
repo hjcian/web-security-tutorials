@@ -6,6 +6,7 @@
     - [Preflighted requests](#preflighted-requests)
     - [Discussion: Google Cloud Storage (GCS) needs CORS setting](#discussion-google-cloud-storage-gcs-needs-cors-setting)
     - [Discussion: Can we allow multiple origins?](#discussion-can-we-allow-multiple-origins)
+    - [Discussion: Public-network resources CANNOT requesting private-network if the public-network is NOT secure](#discussion-public-network-resources-cannot-requesting-private-network-if-the-public-network-is-not-secure)
   - [Cookie](#cookie)
     - [Brief Explained](#brief-explained)
     - [The `Set-Cookie` and `Cookie` headers](#the-set-cookie-and-cookie-headers)
@@ -100,6 +101,9 @@
 - 也無法透過設置多個 `Access-Control-Allow-Origin` 在 response header 中來達成
 - 建議的做法是伺服器去 **echo** request 中的 `origin` header (當然要檢查在你的白名單內才 echo)
 
+### Discussion: Public-network resources CANNOT requesting private-network if the public-network is NOT secure
+![picture 1](https://i.imgur.com/yE0Vfok.png)
+- https://stackoverflow.com/questions/66534759/chrome-cors-error-on-request-to-localhost-dev-server-from-remote-site
 
 ## Cookie
 ### Brief Explained
