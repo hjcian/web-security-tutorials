@@ -2,7 +2,7 @@ const express = require("express");
 
 const app = express();
 
-app.options("/post", (req, res) => {
+app.options("/doc", (req, res) => {
   const resp = JSON.stringify(
     {
       options: "ok",
@@ -18,9 +18,9 @@ app.options("/post", (req, res) => {
   res.send();
 });
 // const cors = require("cors");
-// app.options("/post", cors()); // default cors settings are open to all
+// app.options("/doc", cors()); // default cors settings are open to all
 
-app.post("/post", (req, res) => {
+app.post("/doc", (req, res) => {
   const resp = JSON.stringify(
     {
       cors: "ok",
