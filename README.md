@@ -4,9 +4,11 @@
   - [Cross-Origin Resource Sharing (CORS)](#cross-origin-resource-sharing-cors)
     - [Simple requests](#simple-requests)
     - [Preflighted requests](#preflighted-requests)
-    - [Discussion: Google Cloud Storage (GCS) needs CORS setting](#discussion-google-cloud-storage-gcs-needs-cors-setting)
-    - [Discussion: Can we allow multiple origins?](#discussion-can-we-allow-multiple-origins)
-    - [Discussion: Public-network resources CANNOT requesting private-network if the public-network is NOT secure](#discussion-public-network-resources-cannot-requesting-private-network-if-the-public-network-is-not-secure)
+    - [Discussion](#discussion)
+      - [Should I implement CORS supports from scratch on server-side?](#should-i-implement-cors-supports-from-scratch-on-server-side)
+      - [Google Cloud Storage (GCS) needs CORS setting](#google-cloud-storage-gcs-needs-cors-setting)
+      - [Can we allow multiple origins?](#can-we-allow-multiple-origins)
+      - [Public-network resources CANNOT requesting private-network if the public-network is NOT secure](#public-network-resources-cannot-requesting-private-network-if-the-public-network-is-not-secure)
   - [Cookie](#cookie)
     - [Brief Explained](#brief-explained)
     - [The `Set-Cookie` and `Cookie` headers](#the-set-cookie-and-cookie-headers)
@@ -56,7 +58,7 @@
 - 若想要你的 website 能夠跨來源取得其他來源的伺服器資源，會需要該伺服器回傳指定的 HTTP headers，以讓瀏覽器檢查伺服器回傳的 HTTP headers 是否符合 CORS 標準
   - 簡單來說，需要該伺服器實作一種「白名單機制」
   - e.g. `Access-Control-Allow-Origin` header
-- 更進一步地說，瀏覽器會根據以下不同情境，對跨來源 HTTP 請求有不同的 CORS 驗證行為、也引導著伺服器應該要如何正確實作：
+- 更進一步地說，瀏覽器會根據以下不同情境，對跨來源 HTTP 請求有不同的 CORS 驗證行為、並指導伺服器應如何正確實作：
   - Simple requests
   - Preflighted requests
 
@@ -76,7 +78,23 @@
     - `Range`
 - 此時，瀏覽器真的會發送請求給伺服器，並在拿到 response 後一件事：伺服器是否允許此網頁存取它
   - 檢查方式為查看 response header 中的 `Access-Control-Allow-Origin` 是否與網頁的 origin 相符合
+    > ```mermaid
+    > sequenceDiagram
+    >   participant b as Browser (foo.example.com)
+    >   participant s as Server
+    >   b->>s: GET /resources HTTP/1.1<br> Origin: foo.example.com
+    >   s->>b: HTTP/1.1 200 OK <br> Access-Control-Allow-Origin: foo.example.com
+    >   Note over b: CORS 驗證通過，正常處理資源
+    > ```
   - 若不符合，就顯示 `blocked by CORS policy`
+    > ```mermaid
+    > sequenceDiagram
+    >   participant b as Browser (foo.example.com)
+    >   participant s as Server
+    >   b->>s: GET /resources HTTP/1.1<br> Origin: foo.example.com
+    >   s->>b: HTTP/1.1 200 OK <br> Access-Control-Allow-Origin: bar.example.com
+    >   Note over b: CORS 驗證不通過，<br>顯示 blocked by CORS policy
+    > ```
 - demo:
   - 假設
     - 發起的請求分別為 `GET` 與 `POST`
@@ -84,18 +102,45 @@
   - `make run-server-for-demo-simple-request` and start live coding
   - go to https://example.com/ and open **DevTool**
 
+
+
 ### Preflighted requests
 > See also
 > - [CORS: Preflighted requests - MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#preflighted_requests)
 
-- 其他會對 server data 產生 side-effects 的請求，CORS 規範要求瀏覽器必須先 **preflight a request**、詢問伺服器：「請問我可以使用什麼方法請求呢 🙂 ？」
-- 舉例
-  - 今天我要發起的請求為 `POST`
-  - 但我帶入的 request body content type 為 JSON (`Content-type: application/json`)
-  - demo:
-    - TODO
+- 其他會對 server data 產生 side-effects 的請求，CORS 規範要求瀏覽器必須
+  1. 先 **preflight a request** 詢問伺服器：我接下來要傳送的 requests 摘要如下 (blahblahbalh)，請問允許嗎？
+  2. 若允許，才執行真實的 request
+  - 所以一個 preflighted request，實際上會對伺服器發送 2 次 requests 來完成網頁的需求
+- 瀏覽器如何 preflight a request 呢？
+  - 發送一個 HTTP `OPTIONS` 請求給伺服器。其中包含兩個 headers：
+    - `Access-Control-Request-Method: <method>` 描述真實請求的 method
+    - `Access-Control-Request-Headers: <field-name>[, <field-name>]` 描述真實請求中會帶入哪些 headers
+- 伺服器如何正確回應 `OPTIONS` 請求給瀏覽器呢？
+  - 對會被非同源存取的 endpoint，具體實作 `OPTIONS` 的回應
+  - `Access-Control-Allow-Origin` header 描述合法的網域為何
+  - `Access-Control-Allow-Methods` header 描述合法的 HTTP 方法
+  - `Access-Control-Allow-Headers` header 描述合法的標頭
+- demo steps
+  - `make run-server-for-demo-preflighted-request` and start live coding
+  - go to https://example.com/ and open **DevTool**
+  - 將請求改成：`POST` + `Content-type: application/json`，製造出 preflighted request
+  - 撰寫 `options` handler，從伺服器端看到瀏覽器真的發起了一個 HTTP `OPTIONS` 請求
+  - 完成 `options` handler，使伺服器正確回應瀏覽器的 preflighted request，即可完成實作
+    ```
+    res.setHeader("Access-Control-Allow-Origin", "https://example.com");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Methods", "POST");
+    res.send();
+    ```
+### Discussion
+#### Should I implement CORS supports from scratch on server-side?
+> See also
+> - [expressjs/cors](https://expressjs.com/en/resources/middleware/cors.html)
+> - [gin-contrib/cors](https://github.com/gin-contrib/cors)
+- 當然找找與你使用的 web framework 最契合的 library/package，配置設一設就好囉
 
-### Discussion: Google Cloud Storage (GCS) needs CORS setting
+#### Google Cloud Storage (GCS) needs CORS setting
 > See also
 > - [Configure cross-origin resource sharing (CORS) on a bucket](https://cloud.google.com/storage/docs/configuring-cors)
 - 我們會把檔案、圖片放到 GCS 內指定的 **bucket**，且可以取得一個 public URL 來指向該檔案
@@ -103,7 +148,7 @@
 - 如果該檔案是一個圖片檔，實務應用會將它直接塞進 `<img src="image link">` tag 裡，讓瀏覽器直接發出請求、拿到圖片、直接呈現
 - 但 GCS 預設也不是任何人拿到 URL 都可以存取資源，它會要求你替該 bucket 設定好 CORS，正向表列出有哪些 websites 可以存取你的資源
 
-### Discussion: Can we allow multiple origins?
+#### Can we allow multiple origins?
 > See also
 > - [Reason: Multiple CORS header 'Access-Control-Allow-Origin' not allowed - MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSMultipleAllowOriginNotAllowed)
 
@@ -111,7 +156,7 @@
 - 也無法透過設置多個 `Access-Control-Allow-Origin` 在 response header 中來達成
 - 建議的做法是伺服器去 **echo** request 中的 `origin` header (當然要檢查在你的白名單內才 echo)
 
-### Discussion: Public-network resources CANNOT requesting private-network if the public-network is NOT secure
+#### Public-network resources CANNOT requesting private-network if the public-network is NOT secure
 ![picture 1](https://i.imgur.com/yE0Vfok.png)
 - https://stackoverflow.com/questions/66534759/chrome-cors-error-on-request-to-localhost-dev-server-from-remote-site
 
