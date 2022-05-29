@@ -293,6 +293,9 @@ References:
 
 ## Cross-Site Request Forgery (CSRF)
 
+> See also
+> - https://portswigger.net/web-security/csrf
+
 ## Cross-Site Scripting (XSS)
 
 ### Reflected XSS
