@@ -51,22 +51,32 @@
 > - [跨來源資源共用 (CORS) - MDN](https://developer.mozilla.org/zh-TW/docs/Web/HTTP/CORS)
 > - [CORS Tutorial: A Guide to Cross-Origin Resource Sharing - auth0.com](https://auth0.com/blog/cors-tutorial-a-guide-to-cross-origin-resource-sharing/)
 
-- 前述我們準備的一個例子示範如何用 Javascript 執行「跨來源 HTTP 請求」。而使用 JS 執行的跨來源 HTTP 請求會被瀏覽器預設的 CORS policy 擋下來，而出現如下圖的紅字提示
+- 前面示範了一個用 Javascript 執行「跨來源 HTTP 請求」，並且被瀏覽器預設的 CORS policy 擋下來的例子：
   ![picture 1](https://i.imgur.com/rxXECZ4.png)
-- 而若想要你的 website 能夠跨來源取得其他來源的伺服器資源，會需要該伺服器回傳指定的 HTTP headers
-  - e.g. `Access-Control-Allow-Origin`
-  - 簡單來說就是要該伺服器實作 website 白名單 (及該 website 的允許行為)
-- 瀏覽器則會負責檢查伺服器回傳的 HTTP headers 是否符合 CORS 標準
-- 更進一步地說，瀏覽器在**執行跨來源 HTTP 請求**時，會先將 website 發起的請求區分為 **「 Simple requests 」** 與 **「 Preflighted requests 」**，兩者執行細節有所差異
+- 若想要你的 website 能夠跨來源取得其他來源的伺服器資源，會需要該伺服器回傳指定的 HTTP headers，以讓瀏覽器檢查伺服器回傳的 HTTP headers 是否符合 CORS 標準
+  - 簡單來說，需要該伺服器實作一種「白名單機制」
+  - e.g. `Access-Control-Allow-Origin` header
+- 更進一步地說，瀏覽器會根據以下不同情境，對跨來源 HTTP 請求有不同的 CORS 驗證行為、也引導著伺服器應該要如何正確實作：
+  - Simple requests
+  - Preflighted requests
 
 ### Simple requests
 > See also
 > - [CORS: Simple requests - MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#simple_requests)
 
-- 簡單來說，你發起的請求只是 `GET` 與 `POST`、且僅包含少數特定的 headers 時，瀏覽器會幫你執行 **simple requests**
-- 此時，瀏覽器真的會發送請求給伺服器，並在拿到 response 後做較簡單的檢查。若不合法，則顯示 `blocked by CORS policy`
-- 瀏覽器會去檢查一件事：伺服器是否允許此網頁存取它
-  - 檢查方式為
+- 簡單來說，你發起的請求只是 `GET` 與 `POST`、且沒什麼特別的 headers 時，瀏覽器會幫你執行 **simple requests**
+  - 所謂「沒什麼特別的 headers」，是指 request 若僅包含以下的 headers，就屬於 simple requests
+    - `Accept`
+    - `Accept-Language`
+    - `Content-Language`
+    - `Content-Type` (且僅是下面三種 MIME types)
+      - `application/x-www-form-urlencoded`
+      - `multipart/form-data`
+      - `text/plain`
+    - `Range`
+- 此時，瀏覽器真的會發送請求給伺服器，並在拿到 response 後一件事：伺服器是否允許此網頁存取它
+  - 檢查方式為查看 response header 中的 `Access-Control-Allow-Origin` 是否與網頁的 origin 相符合
+  - 若不符合，就顯示 `blocked by CORS policy`
 - demo:
   - 假設
     - 發起的請求分別為 `GET` 與 `POST`
