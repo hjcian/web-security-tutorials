@@ -1,14 +1,6 @@
 **Table of Contents**
 - [Web Security 101](#web-security-101)
-  - [Same Origin Policy](#same-origin-policy)
-  - [Cross-Origin Resource Sharing (CORS)](#cross-origin-resource-sharing-cors)
-    - [Simple requests](#simple-requests)
-    - [Preflighted requests](#preflighted-requests)
-    - [Discussions](#discussions)
-      - [🤔 Should I implement CORS support from scratch on server-side?](#-should-i-implement-cors-support-from-scratch-on-server-side)
-      - [🤔 Can we allow multiple origins?](#-can-we-allow-multiple-origins)
-      - [📝 Google Cloud Storage (GCS) needs CORS setting](#-google-cloud-storage-gcs-needs-cors-setting)
-      - [📝 CORS-RFC1918: protect users from cross-site request forgery (CSRF) attacks targeting routers and other devices on private networks](#-cors-rfc1918-protect-users-from-cross-site-request-forgery-csrf-attacks-targeting-routers-and-other-devices-on-private-networks)
+  - [Same Origin Policy and Cross-Origin Resource Sharing (CORS)](#same-origin-policy-and-cross-origin-resource-sharing-cors)
   - [Cookie](#cookie)
     - [Brief Explained](#brief-explained)
     - [The `Set-Cookie` and `Cookie` headers](#the-set-cookie-and-cookie-headers)
@@ -23,187 +15,13 @@
   - [Content Security Policy (CSP)](#content-security-policy-csp)
   - [Cross-Origin Read Blocking (CORB)](#cross-origin-read-blocking-corb)
   - [Practical Experience: Veracode & on-premise NIS deployment](#practical-experience-veracode--on-premise-nis-deployment)
+  - [OAuth2.0](#oauth20)
 - [補充資料待整理](#補充資料待整理)
 
 # Web Security 101
 
-## Same Origin Policy
-- 所謂的「同源 (Same Origin)」是指兩個網站的「通訊協定 (protocol)」、「主機名稱 (host)」與「埠號 (port)」皆相同
-- 網頁安全模型在原則上，不允許不同源的網站之間通訊，以保障最基本的網路安全
-- 給定 `http://store.company.com/dir/page.html` ，以下各 URLs 與之同源與否：
-  1. ✅ `http://store.company.com/dir2/other.html`
-  2. ✅ `http://store.company.com/dir/inner/another.html`
-  3. 📛 `https://store.company.com/page.html`
-  4. 📛 `http://store.company.com:81/dir/page.html`
-  5. 📛 `http://news.company.com/dir/page.html`
-- 預設規則
-  - 但透過 HTML tag (embedding) 內發起的 GET 請求，就算非同源，通常都會被允許
-  - 而透過 Javascript 程式碼去發起的請求，都會被限制
-- demo steps
-  - `make run-same-origin-policy-demo`
-  - open **DevTool** and see the console
-
-> See also
-> - [簡單弄懂同源政策 (Same Origin Policy) 與跨網域 (CORS) - StarBugs](https://medium.com/starbugs/%E5%BC%84%E6%87%82%E5%90%8C%E6%BA%90%E6%94%BF%E7%AD%96-same-origin-policy-%E8%88%87%E8%B7%A8%E7%B6%B2%E5%9F%9F-cors-e2e5c1a53a19)
-> - [同源政策 (Same-origin policy) - MDN](https://developer.mozilla.org/zh-TW/docs/Web/Security/Same-origin_policy)
-> - [Why is the same origin policy so important? - stackexchange](https://security.stackexchange.com/questions/8264/why-is-the-same-origin-policy-so-important)
-
-
-## Cross-Origin Resource Sharing (CORS)
-
-- 前面示範了一個用 Javascript 執行「跨來源 HTTP 請求」，並且被瀏覽器預設的 CORS policy 擋下來的例子：
-  ![picture 1](https://i.imgur.com/rxXECZ4.png)
-- 若想要你的 website 能夠跨來源取得其他來源的伺服器資源，會需要該伺服器回傳指定的 HTTP headers，以讓瀏覽器檢查伺服器回傳的 HTTP headers 是否符合 CORS 標準
-  - 簡單來說，需要該伺服器實作一種「白名單機制」
-- 更進一步地說，瀏覽器會根據以下不同情境，對跨來源 HTTP 請求有不同的 CORS 驗證行為、並指導伺服器應如何正確實作：
-  - **Simple requests**
-  - **Preflighted requests**
-
-> See also
-> - [跨來源資源共用 (CORS) - MDN](https://developer.mozilla.org/zh-TW/docs/Web/HTTP/CORS)
-> - [CORS Tutorial: A Guide to Cross-Origin Resource Sharing - auth0.com](https://auth0.com/blog/cors-tutorial-a-guide-to-cross-origin-resource-sharing/)
-
-### Simple requests
-
-- 你發起的請求只是 `GET` 與 `POST`、且沒什麼特別的 headers 時，瀏覽器會幫你執行 **simple requests**
-  - 所謂「沒什麼特別的 headers」，是指 request 若僅包含以下的 headers，就屬於 simple requests
-    - `Accept`
-    - `Accept-Language`
-    - `Content-Language`
-    - `Content-Type` (且僅是下面三種 MIME types)
-      - `application/x-www-form-urlencoded`
-      - `multipart/form-data`
-      - `text/plain`
-    - `Range`
-- 此時，瀏覽器真的會發送請求給伺服器，並在拿到 response 後檢查：伺服器是否允許此網頁存取它
-  - 檢查方式為查看 response header 中的 `Access-Control-Allow-Origin` 是否與網頁的 origin 相符合
-    > ```mermaid
-    > sequenceDiagram
-    >   participant b as Browser (foo.example.com)
-    >   participant s as Server
-    >   b->>s: GET /resources HTTP/1.1<br> Origin: foo.example.com
-    >   s->>b: HTTP/1.1 200 OK <br> Access-Control-Allow-Origin: foo.example.com
-    >   Note over b: CORS 驗證通過，正常處理資源
-    > ```
-  - 若不符合，就顯示 `blocked by CORS policy`
-    > ```mermaid
-    > sequenceDiagram
-    >   participant b as Browser (foo.example.com)
-    >   participant s as Server
-    >   b->>s: GET /resources HTTP/1.1<br> Origin: foo.example.com
-    >   s->>b: HTTP/1.1 200 OK <br> Access-Control-Allow-Origin: bar.example.com
-    >   Note over b: CORS 驗證不通過，<br>顯示 blocked by CORS policy
-    > ```
-- demo steps
-  - `make run-server-for-demo-simple-request` and start live coding
-  - go to https://example.com/ and open **DevTool**
-  - 實作 endpoint，只 echo request headers
-  - 發起 `GET` 請求，製造一個 simple request，呈現 blocked by CORS
-  - 完善 endpoint，允許網頁存取
-
-> See also
-> - [CORS: Simple requests - MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#simple_requests)
-
-### Preflighted requests
-
-- 其他會對 server data 產生 side-effects 的請求，CORS 規範要求瀏覽器必須
-  1. 先 **preflight a request** 詢問伺服器：這是我接下來要傳送的 requests 摘要，請問允許嗎？
-  2. 若允許，才執行真實的 request
-  - 所以一個 preflighted request，實際上會對伺服器發送 **2 次 requests** 來完成網頁的需求
-- 瀏覽器如何 preflight a request 呢？
-  - 發送一個 HTTP `OPTIONS` 請求給伺服器。其中包含兩個 headers：
-    - `Access-Control-Request-Method: <method>` 描述真實請求的 method
-    - `Access-Control-Request-Headers: <field-name>[, <field-name>]*` 描述真實請求中會帶入哪些 headers
-- 伺服器如何正確回應 `OPTIONS` 請求給瀏覽器呢？
-  - 對會被非同源存取的 endpoint，具體實作 `OPTIONS` 的回應
-  - `Access-Control-Allow-Origin: <origin> | *` header 描述合法的網域為何
-  - `Access-Control-Allow-Methods: <method>[, <method>]*` header 描述合法的 HTTP 方法
-  - `Access-Control-Allow-Headers: <header-name>[, <header-name>]*` header 描述合法的標頭
-- 以下為一個 Preflighted request 完整的循序圖
-  > ```mermaid
-  > sequenceDiagram
-  >   participant b as Browser
-  >   participant s as Server
-  >   RECT rgb(37, 150, 190)
-  >     Note right of b: Preflighted request
-  >     b->>s: OPTIONS /doc HTTP/1.1 <br> Origin: https://example.com <br> Access-Control-Request-Method: POST <br> Access-Control-Request-Headers: Content-Type
-  >     s->>b: HTTP/1.1 204 No Content <br> Access-Control-Allow-Origin: https://example.com <br> Access-Control-Allow-Methods: POST <br> Access-Control-Allow-Headers: Content-Type
-  >   END
-  >   RECT rgb(247, 151, 25)
-  >     Note right of b: Actual request
-  >     b->>s: POST /doc HTTP/1.1 <br> Origin: https://example.com <br> Content-Type: application/json
-  >     s->>b: HTTP/1.1 200 OK ...
-  >   END
-  > ```
-
-- demo steps
-  - `make run-server-for-demo-preflighted-request` and start live coding
-  - go to https://example.com/ and open **DevTool**
-  - 將請求改成：`POST` + `Content-type: application/json`，製造出 preflighted request
-  - 撰寫 `options` handler，從伺服器端看到瀏覽器真的發起了一個 HTTP `OPTIONS` 請求
-  - 完成 `options` handler，使伺服器正確回應瀏覽器的 preflighted request
-    ```
-    res.setHeader("Access-Control-Allow-Origin", "https://example.com");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-    res.setHeader("Access-Control-Allow-Methods", "POST");
-    res.send();
-    ```
-
-> See also
-> - [CORS: Preflighted requests - MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#preflighted_requests)
-
-### Discussions
-
-#### 🤔 Should I implement CORS support from scratch on server-side?
-- 當然找找與你使用的 web framework 最契合的 library/package，配置設一設就好囉
-
-> See also
-> - [expressjs/cors](https://expressjs.com/en/resources/middleware/cors.html)
-> - [gin-contrib/cors](https://github.com/gin-contrib/cors)
-
-#### 🤔 Can we allow multiple origins?
-
-- `Access-Control-Allow-Origin` 並不支援回傳多個 origins 的語法 (無論你空白分隔還是逗點分隔，瀏覽器都不理你)
-  - 🛑 `Access-Control-Allow-Origin: foo.com bar.com`
-  - 🛑 `Access-Control-Allow-Origin: foo.com, bar.com`
-- 也無法透過設置多個 `Access-Control-Allow-Origin` 在 response header 中來達成
-  - 🛑
-    > ```
-    > Access-Control-Allow-Origin: foo.com
-    > Access-Control-Allow-Origin: bar.com
-    > ```
-- 建議的做法是伺服器去 **echo** request 中的 `origin` header (當然要檢查在你的白名單內才 echo)
-
-> See also
-> - [Reason: Multiple CORS header 'Access-Control-Allow-Origin' not allowed - MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSMultipleAllowOriginNotAllowed)
-
-#### 📝 Google Cloud Storage (GCS) needs CORS setting
-
-- 我們會把檔案、圖片放到 GCS 內指定的 **bucket**，且可以取得一個 public URL 來指向該檔案
-  - format: `https://storage.googleapis.com/<bucket>/<object>`
-  - e.g. https://storage.googleapis.com/test-origin-jubo-image/module/orgid/xxxooo
-- 如果該檔案是一個圖片檔，實務應用會將它直接塞進 `<img src="image link">` tag 裡，讓瀏覽器直接發出請求、拿到圖片、直接呈現
-- 但 GCS 預設也不是任何人拿到 URL 都可以存取資源，它會要求你替該 bucket 設定好 CORS，正向表列出有哪些 websites 可以存取你的資源
-
-> See also
-> - [Configure cross-origin resource sharing (CORS) on a bucket](https://cloud.google.com/storage/docs/configuring-cors)
-
-#### 📝 CORS-RFC1918: protect users from cross-site request forgery (CSRF) attacks targeting routers and other devices on private networks
-
-![picture 1](https://i.imgur.com/yE0Vfok.png)
-
-- 前面的 demo ，都刻意在 https://example.com 上，向本機伺服器 (`localhost:8080`) 發起請求
-- 但如果你使用 Chromium-based browser 在 http://example.com 上發起，就會出現以上的 CORS 提示
-  - 因為，這個行為太像是一種 Cross-site Request Forgery (CSRF)!
-- 出現提示的機制是 Chromium-based browser 實作了 CORS-RFC1918，[目的](https://wicg.github.io/private-network-access/#goals)是要保護運行在私有網路的服務、設備，不容易被用戶代理 (user agent, i.e. browser) 利用、攻擊
-- Chrome 除了已限制網站向私有網路發起請求的能力 (since Chrome 9x)，並[計畫](https://developer.chrome.com/blog/private-network-access-preflight/#rollout-plan)自 Chrome 102 起擴充 CORS 的驗證行為，在 public to private 的 CORS 請求中增加 `Access-Control-Request-Private-Network: true` ，並期待私有網路內的伺服器明確地回應 `Access-Control-Allow-Private-Network: true`，才允許 CORS
-
-> See also
-> - https://stackoverflow.com/questions/66534759/chrome-cors-error-on-request-to-localhost-dev-server-from-remote-site
-> - [RFC about CORS-RFC1918 (from a Chrome-team member)](https://web.dev/cors-rfc1918-feedback/)
-> - [Chrome 安全策略 - 私有网络控制（CORS-RFC1918）](https://cloud.tencent.com/developer/article/1809996)
-> - [Private Network Access (aka. CORS-RFC1918)](https://wicg.github.io/private-network-access/)
-> - [Private Network Access: introducing preflights](https://developer.chrome.com/blog/private-network-access-preflight/)
+## Same Origin Policy and Cross-Origin Resource Sharing (CORS)
+- https://hackmd.io/@maxcian/web-security-same-origin-policy-and-cors
 
 ## Cookie
 ### Brief Explained
@@ -310,6 +128,11 @@ References:
 - https://juejin.cn/post/6844903831373889550
 
 ## Practical Experience: Veracode & on-premise NIS deployment
+
+
+## OAuth2.0
+
+
 
 # 補充資料待整理
 - [[熱門面試題] 從輸入網址列到渲染畫面，過程經歷了什麼事？](https://medium.com/starbugs/%E7%86%B1%E9%96%80%E9%9D%A2%E8%A9%A6%E9%A1%8C-%E5%BE%9E%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E5%88%97%E5%88%B0%E6%B8%B2%E6%9F%93%E7%95%AB%E9%9D%A2-%E9%81%8E%E7%A8%8B%E7%B6%93%E6%AD%B7%E4%BA%86%E4%BB%80%E9%BA%BC%E4%BA%8B-4a6cafefe78a)
