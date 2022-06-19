@@ -2,11 +2,6 @@
 - [Web Security 101](#web-security-101)
   - [Same Origin Policy and Cross-Origin Resource Sharing (CORS)](#same-origin-policy-and-cross-origin-resource-sharing-cors)
   - [Cookie](#cookie)
-    - [Brief Explained](#brief-explained)
-    - [The `Set-Cookie` and `Cookie` headers](#the-set-cookie-and-cookie-headers)
-    - [補充](#補充)
-    - [The Cookie Policy](#the-cookie-policy)
-    - [Harden your Cookie](#harden-your-cookie)
   - [Cross-Site Request Forgery (CSRF)](#cross-site-request-forgery-csrf)
   - [Cross-Site Scripting (XSS)](#cross-site-scripting-xss)
     - [Reflected XSS](#reflected-xss)
@@ -15,7 +10,6 @@
   - [Content Security Policy (CSP)](#content-security-policy-csp)
   - [Cross-Origin Read Blocking (CORB)](#cross-origin-read-blocking-corb)
   - [Practical Experience: Veracode & on-premise NIS deployment](#practical-experience-veracode--on-premise-nis-deployment)
-  - [OAuth2.0](#oauth20)
 - [補充資料待整理](#補充資料待整理)
 
 # Web Security 101
@@ -24,90 +18,7 @@
 - https://hackmd.io/@maxcian/web-security-same-origin-policy-and-cors
 
 ## Cookie
-### Brief Explained
-- 由於 HTTP 的設計為 stateless，故如何管理並追蹤使用者的「session」，以得知前後不同的 requests 是由同一個使用者所進行的同一組 session，是一個需要想清楚的事
-- 最早訂定的標準為 1997 年的「RFC 2109 - HTTP State Management Mechanism」，提出使用 `Set-Cookie` 與 `Cookie` 兩個 headers 來創建 stateful session 的方法
-- 事後經過兩次的修訂 (2000 年的 RFC 2965 與 2010 年的 RFC 6265)，使得相關實作規範更加明確
-- 我們需要 Cookie 的機制幫我們創造 **stateful session**，此機制係利用瀏覽器支援的 `Set-Cookie` 與 `Cookie` 兩個 headers 來達成
-  - 所謂的 `Set-Cookie`，是由伺服器 (server-side) 添加、包含在 HTTP Response 中的 header，瀏覽器作為用戶端收到後儲存下來的 stateful information
-  - 所謂的 `Cookie`，是由瀏覽器 (client-side) 添加、包含在 HTTP Request 中的 header，讓伺服器收到後從中解析出 stateful information
-
-### The `Set-Cookie` and `Cookie` headers
-
-- 簡單的 cookie 設置例 (from server to user agent)
-  ```
-  Set-Cookie: <cookie-name>=<cookie-value>
-  ```
-- server 透過以下的 HTTP response 告訴 client 儲存這些 cookie pairs
-  ```
-  HTTP/2.0 200 OK
-  Content-Type: text/html
-  Set-Cookie: yummy_cookie=choco
-  Set-Cookie: tasty_cookie=strawberry
-
-  [page content]
-  ```
-- client 接著在後續的 requests 中帶上這些 cookie
-  ```
-  GET /sample_page.html HTTP/2.0
-  Host: www.example.org
-  Cookie: yummy_cookie=choco; tasty_cookie=strawberry
-  ```
-### 補充
-- https://medium.com/4ing-%E7%9A%84%E8%88%AA%E6%B5%B7%E6%97%A5%E8%AA%8C/fetch-api-%E6%B2%92%E6%9C%89%E5%82%B3%E9%80%81-cookies-fa0befaae40f
-
-References:
-- [淺談 Session 與 Cookie：一起來讀 RFC](https://blog.techbridge.cc/2019/08/10/session-and-cookie-rfc/)
-- [Using HTTP cookies - MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies)
-
-### The Cookie Policy
-- Browser 提供了儲存機制 (Web Storage or IndexedDB) 來儲存 cookie，且預設幫我們根據 **「Origin」** 來做隔離
-- 而瀏覽器預設實作的機制
-  - 頁面可以替它的 domain 或是其 parent domain 設置 cookie
-    - 只要 parent domain 不是 public suffix (通常就是一堆 Top level domains, TLDs)
-  -  cookie 在它原始的 domain 及 sub-domains 中可被取用 (無倫是 http/https 或不同的 port)
-- 但預設的行為其實會造成潛在的(資安)問題，例如：
-  - `foo.example.com` 可以對 `example.com` 設置 cookie，可能因此覆蓋掉 `bar.example.com` 對 `example.com` 的設置
-    - 故 `foo.example.com` 有了可以攻擊 `bar.example.com` 的破口
-  - `http://example.com` 也可以將 `https://example.com` 的 cookie 蓋掉
-    - 故 HTTP 站點有了可以攻擊 HTTPS 站點的破口
-- 故我們需要一些方法，替 cookie key-value pairs 額外做 **scope** 的設置，來加強資訊安全
-
-### Harden your Cookie
-
-✅ Good Attributes
-- `Secure`
-  - server 可指定 cookie pair 擁有 `Secure` 屬性。擁有此屬性的 cookie 會被限制只能透過安全連線來設置 (實務上，HTTPS 是一種安全連線)
-  - 又瀏覽器儲存的 cookie 若有 `Secure` 屬性，就不會在連向 un-encrypted server 時 (i.e. via HTTP)，帶上該 cookie
-  - e.g. `Set-Cookie: key=value; Secure`
-  - ⚠️ except on localhost
-- `HttpOnly`
-  - protect from XSS (to prevent cookie from being read from JavaSCript (`document.cookie`))
-  - e.g. `Set-Cookie: key=value; Secure; HttpOnly`
-
-📛 Bad Attributes
-- `Path`
-  - https://web.stanford.edu/class/cs253/ , [Session attacks, Cross-Site Request Forgery (P.22)](https://web.stanford.edu/class/cs253/lectures/Lecture%2005.pdf)
-- `Domain`
-  - also bad idea (P.27), but need more discussion on this
-
-Experiment List:
-- `Secure`, but why? cen we reproduce man-in-the-middle attack?
-- `HttpOnly`, have or not to show the JS capability
-- CSRF, third-party site embed your site to steal your cookie
-  - prevent it by `SameSite` cookie
-
-important:
-- Cookies don't obey Same Origin Policy
-- This is why Stanford login is `login.stanford.edu` and not `stanford.edu/login` 😲
-
-
-References:
-- [Cross-origin data storage access](https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy#cross-origin_data_storage_access)
-- View, edit, and delete cookies
-  - Edge: https://docs.microsoft.com/en-us/microsoft-edge/devtools-guide-chromium/storage/cookies
-  - Chrome: https://developer.chrome.com/docs/devtools/storage/cookies/
-- [Restrict access to cookies: about `Secure` and `HttpOnly`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#restrict_access_to_cookies)
+- https://hackmd.io/@maxcian/web-security-cookie
 
 ## Cross-Site Request Forgery (CSRF)
 
@@ -128,9 +39,6 @@ References:
 - https://juejin.cn/post/6844903831373889550
 
 ## Practical Experience: Veracode & on-premise NIS deployment
-
-
-## OAuth2.0
 
 
 
